@@ -72,6 +72,7 @@ function App() {
 
       <section className="section">
         {loading && <h4 className="title is-4">Loading...</h4>}
+
         {error && !loading && (
           <div className="notification is-danger">{error}</div>
         )}
