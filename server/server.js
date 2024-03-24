@@ -16,7 +16,14 @@ const todos = [
   },
 ];
 
-server.use(cors({ origin: 'http://localhost:5173' })); // add cors middleware
+server.use(
+  cors({
+    origin: [
+      'http://localhost:5173',
+      'https://boytrend0108.github.io/todo_react_node/',
+    ],
+  }),
+); // add cors middleware
 
 server.get('/todos', (req, res) => {
   console.log(req.url);
