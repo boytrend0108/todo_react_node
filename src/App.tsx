@@ -1,35 +1,97 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { FormEvent, useEffect, useState } from 'react';
+import './App.css';
+import { Todo } from './types/todo';
+import { client } from './api/httpClient';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [todo, setTodo] = useState('');
+
+  function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+
+    const normalizedTodo = todo.trim();
+
+    if (!normalizedTodo) {
+      setError('Todo is empty');
+
+      setTimeout(() => {
+        setError('');
+      }, 1000);
+
+      return;
+    }
+    setLoading(true);
+
+    client
+      .addTodo(todo)
+      .then((newTodo) => setTodos([...todos, newTodo]))
+      .catch(() => setError("Sorry, i can't add a new todo"))
+      .finally(() => {
+        setLoading(false);
+        setTodo('');
+      });
+  }
+
+  useEffect(() => {
+    setLoading(true);
+
+    client
+      .getTodos()
+      .then(setTodos)
+      .catch(() => setError("Error: can't get todos"))
+      .finally(() => setLoading(false));
+  }, [loading]);
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite +++ React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <section className="section">
+      <h1 className="title">Todo with REST API</h1>
+
+      <form onSubmit={handleSubmit}>
+        <div className="field">
+          <label className="label">Label</label>
+          <div className="control">
+            <input
+              className="input"
+              type="text"
+              placeholder="Text input"
+              name="todo"
+              value={todo}
+              onChange={(e) => setTodo(e.target.value)}
+            />
+          </div>
+          <p className="help">This is a help text</p>
+        </div>
+
+        <div className="control">
+          <button className="button is-primary">Add todo</button>
+        </div>
+      </form>
+
+      <section className="section">
+        {loading && <h4 className="title is-4">Loading...</h4>}
+        {error && !loading && (
+          <div className="notification is-danger">{error}</div>
+        )}
+
+        {!loading && !error && (
+          <>
+            {todos.map((todoItem) => (
+              <article className="message" key={todoItem.id}>
+                <div className="message-header">
+                  <p>{todoItem.title}</p>
+                  <button className="delete" aria-label="delete"></button>
+                </div>
+                <div className="message-body">{todoItem.todo}</div>
+              </article>
+            ))}
+          </>
+        )}
+      </section>
+    </section>
+  );
 }
 
-export default App
+export default App;
