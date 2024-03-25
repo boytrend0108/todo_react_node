@@ -1,4 +1,8 @@
-import { FormEvent, useEffect, useState } from 'react';
+/* eslint-disable no-shadow */
+/* eslint-disable no-console */
+import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
+import cn from 'classnames';
+
 import './App.css';
 import { Todo } from './types/todo';
 import { client } from './api/httpClient';
@@ -8,6 +12,12 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [todo, setTodo] = useState('');
+  const [edit, setEdit] = useState('');
+  const [editedTodo, setEditedTodo] = useState('');
+
+  function handleTodoInput(e: ChangeEvent<HTMLInputElement>) {
+    setTodo(e.target.value);
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -27,7 +37,7 @@ function App() {
 
     client
       .addTodo(todo)
-      .then((newTodo) => setTodos([...todos, newTodo]))
+      .then((newTodo) => setTodos([newTodo, ...todos]))
       .catch(() => setError("Sorry, i can't add a new todo"))
       .finally(() => {
         setLoading(false);
@@ -35,7 +45,7 @@ function App() {
       });
   }
 
-  useEffect(() => {
+  function getAllTodos() {
     setLoading(true);
 
     client
@@ -43,7 +53,28 @@ function App() {
       .then(setTodos)
       .catch(() => setError("Error: can't get todos"))
       .finally(() => setLoading(false));
-  }, [loading]);
+  }
+
+  function handleDelete(id: string) {
+    client
+      .deleteTodo(id)
+      .catch((err) => console.log(err))
+      .finally(() => getAllTodos());
+  }
+
+  function handleEdit(id: string, todo: string, completed: boolean) {
+    client
+      .updateTodo(id, todo, completed)
+      .catch((err) => console.log(err))
+      .finally(() => {
+        getAllTodos();
+        setEdit('');
+      });
+  }
+
+  useEffect(() => {
+    getAllTodos();
+  }, []);
 
   return (
     <section className="section">
@@ -59,7 +90,7 @@ function App() {
               placeholder="Text input"
               name="todo"
               value={todo}
-              onChange={(e) => setTodo(e.target.value)}
+              onChange={handleTodoInput}
             />
           </div>
           <p className="help">This is a help text</p>
@@ -83,9 +114,54 @@ function App() {
               <article className="message" key={todoItem.id}>
                 <div className="message-header">
                   <p>{todoItem.title}</p>
-                  <button className="delete" aria-label="delete"></button>
+                  <button
+                    className="delete"
+                    aria-label="delete"
+                    onClick={() => handleDelete(todoItem.id)}
+                  ></button>
                 </div>
-                <div className="message-body">{todoItem.todo}</div>
+
+                {edit === todoItem.id ? (
+                  <input
+                    type="text"
+                    value={editedTodo}
+                    onChange={(e) => setEditedTodo(e.target.value)}
+                    onBlur={() =>
+                      handleEdit(todoItem.id, editedTodo, todoItem.completed)
+                    }
+                    onKeyUp={(e) => {
+                      if (e.key === 'Enter') {
+                        handleEdit(todoItem.id, editedTodo, todoItem.completed);
+                      }
+                    }}
+                    className="message-body"
+                    style={{ width: '100%', color: 'white' }}
+                  />
+                ) : (
+                  <div
+                    className={cn('message-body', {
+                      'message-body--completed': todoItem.completed,
+                    })}
+                    onDoubleClick={() => {
+                      setEdit(todoItem.id);
+                      setEditedTodo(todoItem.todo);
+                    }}
+                  >
+                    <div
+                      className={
+                        todoItem.completed ? 'completed--active' : 'completed'
+                      }
+                      onClick={() =>
+                        handleEdit(
+                          todoItem.id,
+                          todoItem.todo,
+                          !todoItem.completed,
+                        )
+                      }
+                    />
+                    {todoItem.todo}
+                  </div>
+                )}
               </article>
             ))}
           </>

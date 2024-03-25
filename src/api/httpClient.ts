@@ -14,4 +14,14 @@ export const client = {
 
     return axios.post(BASE_URL + '/todos', newTodo).then((res) => res.data);
   },
+
+  deleteTodo(id: string): Promise<string> {
+    return axios.delete(BASE_URL + '/todos/' + id);
+  },
+
+  updateTodo(id: string, todo: string, completed: boolean): Promise<Todo> {
+    return axios
+      .put(BASE_URL + '/todos/' + id, { todo, completed })
+      .then((res) => res.data);
+  },
 };
